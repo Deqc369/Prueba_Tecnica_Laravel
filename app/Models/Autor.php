@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Autor extends Model
 {
     use HasFactory;
-
+    protected $table = 'table_autores';
     protected $fillable = [
         'nombre',
         'apellido',

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class AutorLibro extends Pivot
 {
-    protected $table = 'autor_libro';
+    protected $table = 'table_libros_autores';
 
     protected $fillable = [
         'autor_id',

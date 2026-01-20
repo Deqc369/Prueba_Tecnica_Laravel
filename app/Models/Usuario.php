@@ -14,6 +14,8 @@ class Usuario extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    protected $table = 'table_usuarios';
+
     protected $fillable = [
         'nombre',
         'email',

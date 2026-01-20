@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Libro extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+
+    protected $table = 'table_libros';
 
     protected $fillable = [
         'titulo',
@@ -29,12 +30,20 @@ class Libro extends Model
 
     protected $appends = ['disponible'];
 
+    /* ============================
+     | Relaciones
+     ============================ */
+
     public function autores(): BelongsToMany
     {
-        return $this->belongsToMany(Autor::class, 'autor_libro')
-                    ->using(AutorLibro::class)
-                    ->withPivot('orden_autor')
-                    ->withTimestamps();
+        return $this->belongsToMany(
+            Autor::class,
+            'table_libros_autores',
+            'libro_id',
+            'autor_id'
+        )
+        ->withPivot('orden_autor')
+        ->withTimestamps();
     }
 
     public function prestamos(): HasMany
@@ -42,46 +51,65 @@ class Libro extends Model
         return $this->hasMany(Prestamo::class);
     }
 
-    // Scopes
+    /* ============================
+     | Scopes
+     ============================ */
+
+    /**
+     * Libros con stock disponible
+     */
     public function scopeDisponibles($query)
     {
         return $query->where('stock_disponible', '>', 0);
     }
 
-    public function scopePorAnio($query, $anio)
+    /**
+     * Libros por año de publicación
+     */
+    public function scopePorAnio($query, int $anio)
     {
         return $query->where('anio_publicacion', $anio);
     }
 
-    public function scopePorAutor($query, $autorId)
+    /**
+     * Libros por autor
+     */
+    public function scopePorAutor($query, int $autorId)
     {
         return $query->whereHas('autores', function ($q) use ($autorId) {
-            $q->where('autores.id', $autorId);
+            $q->where('table_autores.id', $autorId);
         });
     }
 
+    /**
+     * Scope combinado reutilizando scopes existentes
+     */
     public function scopeConFiltros($query, array $filtros)
     {
-        return $query->when($filtros['titulo'] ?? null, function ($q, $titulo) {
-            $q->where('titulo', 'like', "%{$titulo}%");
-        })
-        ->when($filtros['autor'] ?? null, function ($q, $autorId) {
-            $q->whereHas('autores', function ($q2) use ($autorId) {
-                $q2->where('autores.id', $autorId);
-            });
-        })
-        ->when($filtros['anio'] ?? null, function ($q, $anio) {
-            $q->where('anio_publicacion', $anio);
-        });
+        return $query
+            ->when($filtros['titulo'] ?? null, fn ($q, $titulo) =>
+                $q->where('titulo', 'ILIKE', "%{$titulo}%")
+            )
+            ->when($filtros['autor_id'] ?? null, fn ($q, $autorId) =>
+                $q->porAutor($autorId)
+            )
+            ->when($filtros['anio'] ?? null, fn ($q, $anio) =>
+                $q->porAnio($anio)
+            )
+            ->when($filtros['disponibles'] ?? false, fn ($q) =>
+                $q->disponibles()
+            );
     }
 
-    // Accessor
+    /* ============================
+     | Accessors & Mutators
+     ============================ */
+
     public function getDisponibleAttribute(): bool
     {
         return $this->stock_disponible > 0;
     }
 
-    // Mutator para ISBN
     public function setIsbnAttribute($value): void
     {
         $this->attributes['isbn'] = strtoupper(str_replace(' ', '', $value));

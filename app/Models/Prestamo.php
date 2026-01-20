@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Prestamo extends Model
 {
     use HasFactory;
+    
+    protected $table = 'table_prestamos';
 
     protected $fillable = [
         'usuario_id',
@@ -18,7 +20,6 @@ class Prestamo extends Model
         'fecha_devolucion_real',
         'estado',
     ];
-
     protected $casts = [
         'fecha_prestamo' => 'date',
         'fecha_devolucion_estimada' => 'date',

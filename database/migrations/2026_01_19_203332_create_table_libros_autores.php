@@ -13,10 +13,10 @@ return new class extends Migration {
         Schema::create('table_libros_autores', function (Blueprint $table) {
             $table->id();
             $table->foreignId('autor_id')
-                ->constrained('autores')
+                ->constrained('table_autores')
                 ->onDelete('cascade');
-
-            $table->foreignId('libro_id')->constrained()->onDelete('cascade');
+            $table->integer('orden_autor')->default(1);
+            $table->foreignId('libro_id')->constrained('table_libros')->onDelete('cascade');
             $table->timestamps();
 
             $table->unique(['autor_id', 'libro_id']);
